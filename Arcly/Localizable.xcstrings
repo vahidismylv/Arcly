@@ -1,0 +1,66 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "%@ of %@" : {
+
+    },
+    "%@ since last fast" : {
+
+    },
+    "%@ to goal" : {
+
+    },
+    "%lld day streak" : {
+
+    },
+    "Eating window" : {
+
+    },
+    "End Fast" : {
+
+    },
+    "End fast early?" : {
+
+    },
+    "Fasting" : {
+
+    },
+    "Fasting timer" : {
+
+    },
+    "Goal reached" : {
+
+    },
+    "History" : {
+
+    },
+    "Keep Fasting" : {
+
+    },
+    "No fast in progress" : {
+
+    },
+    "OMAD" : {
+
+    },
+    "since last fast" : {
+
+    },
+    "Start Fast" : {
+
+    },
+    "Start your first fast" : {
+
+    },
+    "Stats" : {
+
+    },
+    "Today" : {
+
+    },
+    "You've fasted %@ of your %@ goal. It will be saved as ended early." : {
+
+    }
+  },
+  "version" : "1.0"
+}
