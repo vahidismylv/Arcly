@@ -2,7 +2,14 @@
   "sourceLanguage" : "en",
   "strings" : {
     "%@ of %@" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ of %2$@"
+          }
+        }
+      }
     },
     "%@ since last fast" : {
 
@@ -11,6 +18,38 @@
 
     },
     "%lld day streak" : {
+
+    },
+    "%lld hours" : {
+
+    },
+    "%lldh fast · %lldh eat" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$lldh fast · %2$lldh eat"
+          }
+        }
+      }
+    },
+    "%lld–%lldh fast" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$lld–%2$lldh fast"
+          }
+        }
+      }
+    },
+    "30 minutes left" : {
+
+    },
+    "30 minutes to go" : {
+
+    },
+    "Custom" : {
 
     },
     "Eating window" : {
@@ -22,10 +61,38 @@
     "End fast early?" : {
 
     },
+    "Every day at your start time" : {
+
+    },
     "Fasting" : {
 
     },
+    "Fasting from %@ to %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Fasting from %1$@ to %2$@"
+          }
+        }
+      }
+    },
+    "Fasting goal reached" : {
+
+    },
+    "Fasting hours" : {
+
+    },
+    "Fasting start" : {
+
+    },
+    "Fasting starts at" : {
+
+    },
     "Fasting timer" : {
+
+    },
+    "Fasting window" : {
 
     },
     "Goal reached" : {
@@ -43,7 +110,16 @@
     "OMAD" : {
 
     },
-    "since last fast" : {
+    "Protocol" : {
+
+    },
+    "Reminders" : {
+
+    },
+    "Schedule" : {
+
+    },
+    "Shortly before the goal" : {
 
     },
     "Start Fast" : {
@@ -55,10 +131,35 @@
     "Stats" : {
 
     },
+    "Time to start fasting" : {
+
+    },
     "Today" : {
 
     },
+    "When your fast hits its goal" : {
+
+    },
+    "You've completed your %@ fast. Nice work." : {
+
+    },
     "You've fasted %@ of your %@ goal. It will be saved as ended early." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "You've fasted %1$@ of your %2$@ goal. It will be saved as ended early."
+          }
+        }
+      }
+    },
+    "Your %@ fast is almost done." : {
+
+    },
+    "Your %@ fasting window begins now." : {
+
+    },
+    "since last fast" : {
 
     }
   },

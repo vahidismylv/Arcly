@@ -27,7 +27,10 @@ final class ArcTodayViewModel {
         return String(localized: "You've fasted \(elapsed) of your \(target) goal. It will be saved as ended early.")
     }
 
+    var onShowSchedule: (() -> Void)?
+
     private let store: ArcFastStore
+    private let reminderScheduler: ArcReminderScheduler
     private let calendar: Calendar
     private let now: () -> Date
     private let goalReachedSubject = PassthroughSubject<Void, Never>()
@@ -35,8 +38,14 @@ final class ArcTodayViewModel {
     private var storeCancellable: AnyCancellable?
     private var timerCancellable: AnyCancellable?
 
-    init(store: ArcFastStore, calendar: Calendar = .current, now: @escaping () -> Date = Date.init) {
+    init(
+        store: ArcFastStore,
+        reminderScheduler: ArcReminderScheduler,
+        calendar: Calendar = .current,
+        now: @escaping () -> Date = Date.init
+    ) {
         self.store = store
+        self.reminderScheduler = reminderScheduler
         self.calendar = calendar
         self.now = now
         state = Self.makeState(fasts: store.fasts, schedule: store.schedule, now: now(), calendar: calendar)
@@ -65,6 +74,12 @@ final class ArcTodayViewModel {
 
     func startFast() {
         store.startFast(at: now())
+        // Asked here rather than at launch: the user has just shown why reminders matter.
+        Task { await reminderScheduler.requestAuthorizationIfNeeded() }
+    }
+
+    func showSchedule() {
+        onShowSchedule?()
     }
 
     func endFast() {

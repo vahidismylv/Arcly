@@ -27,6 +27,10 @@ final class ArcTodayViewController: UIViewController {
             UIAction { [weak self] _ in self?.actionButtonTapped() },
             for: .primaryActionTriggered
         )
+        contentView.protocolChip.addAction(
+            UIAction { [weak self] _ in self?.viewModel.showSchedule() },
+            for: .primaryActionTriggered
+        )
         bindViewModel()
     }
 

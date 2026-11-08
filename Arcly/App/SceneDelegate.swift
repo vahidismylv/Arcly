@@ -4,6 +4,7 @@ final class SceneDelegate: UIResponder, UIWindowSceneDelegate {
     var window: UIWindow?
 
     private let store = ArcFastStore(directory: .applicationSupportDirectory)
+    private lazy var reminderScheduler = ArcReminderScheduler(store: store)
     private var appCoordinator: ArcAppCoordinator?
 
     func scene(
@@ -19,7 +20,9 @@ final class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         window.overrideUserInterfaceStyle = .dark
         window.tintColor = ArcColor.accent
 
-        let coordinator = ArcAppCoordinator(window: window, store: store)
+        reminderScheduler.start()
+
+        let coordinator = ArcAppCoordinator(window: window, store: store, reminderScheduler: reminderScheduler)
         coordinator.start()
 
         self.window = window

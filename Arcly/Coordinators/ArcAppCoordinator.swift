@@ -7,9 +7,9 @@ final class ArcAppCoordinator {
     private let historyCoordinator: ArcHistoryCoordinator
     private let statsCoordinator: ArcStatsCoordinator
 
-    init(window: UIWindow, store: ArcFastStore) {
+    init(window: UIWindow, store: ArcFastStore, reminderScheduler: ArcReminderScheduler) {
         self.window = window
-        todayCoordinator = ArcTodayCoordinator(store: store)
+        todayCoordinator = ArcTodayCoordinator(store: store, reminderScheduler: reminderScheduler)
         historyCoordinator = ArcHistoryCoordinator(store: store)
         statsCoordinator = ArcStatsCoordinator(store: store)
     }

@@ -42,6 +42,10 @@ final class ArcDialView: UIView {
 
     private var model: ArcDialModel?
 
+    var showsProgress = true {
+        didSet { progressContainer.isHidden = !showsProgress }
+    }
+
     override init(frame: CGRect) {
         hourLabels = Dictionary(uniqueKeysWithValues: Metrics.labeledHours.map { ($0, Self.makeHourLabel(hour: $0)) })
         super.init(frame: frame)
