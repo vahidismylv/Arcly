@@ -11,6 +11,8 @@ enum ArcColor {
 
     static let textPrimary = UIColor(hex: 0xF2F2F5)
     static let textSecondary = UIColor(hex: 0x8E8E99)
+
+    static let error = UIColor(hex: 0xFF6B6B)
 }
 
 private extension UIColor {

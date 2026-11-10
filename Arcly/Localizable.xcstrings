@@ -11,6 +11,26 @@
         }
       }
     },
+    "%@ of %@ goal" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ of %2$@ goal"
+          }
+        }
+      }
+    },
+    "%@ of %@ · %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ of %2$@ · %3$@"
+          }
+        }
+      }
+    },
     "%@ since last fast" : {
 
     },
@@ -49,16 +69,46 @@
     "30 minutes to go" : {
 
     },
+    "A fast can't be longer than 48 hours." : {
+
+    },
+    "Cancel" : {
+
+    },
+    "Completed" : {
+
+    },
     "Custom" : {
+
+    },
+    "Delete" : {
+
+    },
+    "Delete this fast?" : {
 
     },
     "Eating window" : {
 
     },
+    "Edit Fast" : {
+
+    },
+    "End" : {
+
+    },
     "End Fast" : {
 
     },
+    "End can't be in the future." : {
+
+    },
     "End fast early?" : {
+
+    },
+    "End must be after start." : {
+
+    },
+    "Ended early" : {
 
     },
     "Every day at your start time" : {
@@ -95,16 +145,28 @@
     "Fasting window" : {
 
     },
+    "Finished fasts will show up here." : {
+
+    },
     "Goal reached" : {
 
     },
     "History" : {
 
     },
+    "In progress" : {
+
+    },
+    "It will be removed from your history and stats." : {
+
+    },
     "Keep Fasting" : {
 
     },
     "No fast in progress" : {
+
+    },
+    "No fasts yet" : {
 
     },
     "OMAD" : {
@@ -122,13 +184,22 @@
     "Shortly before the goal" : {
 
     },
+    "Start" : {
+
+    },
     "Start Fast" : {
+
+    },
+    "Start can't be in the future." : {
 
     },
     "Start your first fast" : {
 
     },
     "Stats" : {
+
+    },
+    "This overlaps another fast." : {
 
     },
     "Time to start fasting" : {
