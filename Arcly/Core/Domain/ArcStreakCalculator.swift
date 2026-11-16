@@ -19,6 +19,19 @@ nonisolated struct ArcStreakCalculator {
         return streak
     }
 
+    func bestStreak(in fasts: [ArcFast]) -> Int {
+        var best = 0
+        var current = 0
+        var previousDay: Date?
+        for day in completedDays(in: fasts).sorted() {
+            let isConsecutive = previousDay.flatMap { calendar.date(byAdding: .day, value: 1, to: $0) } == day
+            current = isConsecutive ? current + 1 : 1
+            best = max(best, current)
+            previousDay = day
+        }
+        return best
+    }
+
     private func completedDays(in fasts: [ArcFast]) -> Set<Date> {
         Set(
             fasts

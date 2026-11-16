@@ -16,6 +16,19 @@ final class ArcStatsCoordinator {
     }
 
     func start() {
-        navigationController.setViewControllers([ArcStatsViewController()], animated: false)
+        let viewModel = ArcStatsViewModel(store: store)
+        viewModel.onLogWeight = { [weak self] in self?.showWeightLog() }
+        navigationController.setViewControllers([ArcStatsViewController(viewModel: viewModel)], animated: false)
+    }
+
+    private func showWeightLog() {
+        let viewModel = ArcWeightLogViewModel(store: store)
+        let sheet = UINavigationController(rootViewController: ArcWeightLogViewController(viewModel: viewModel))
+        viewModel.onFinish = { [weak sheet] in
+            sheet?.dismiss(animated: true)
+        }
+        sheet.sheetPresentationController?.detents = [.medium()]
+        sheet.sheetPresentationController?.prefersGrabberVisible = true
+        navigationController.present(sheet, animated: true)
     }
 }

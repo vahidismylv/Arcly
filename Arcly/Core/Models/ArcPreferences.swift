@@ -11,7 +11,7 @@ nonisolated enum ArcWeightUnit: String, Codable, CaseIterable {
     case kilograms
     case pounds
 
-    private var unitMass: UnitMass {
+    var unitMass: UnitMass {
         switch self {
         case .kilograms: .kilograms
         case .pounds: .pounds
