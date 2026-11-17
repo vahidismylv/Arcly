@@ -7,12 +7,13 @@ final class ArcStatsCoordinator {
 
     init(store: ArcFastStore) {
         self.store = store
-        navigationController.navigationBar.prefersLargeTitles = true
         navigationController.tabBarItem = UITabBarItem(
-            title: String(localized: "Stats"),
-            image: UIImage(systemName: "chart.bar.xaxis"),
+            title: String(localized: "Progress"),
+            image: UIImage(systemName: "chart.line.uptrend.xyaxis"),
             selectedImage: nil
         )
+        // The screen draws its own large title.
+        navigationController.isNavigationBarHidden = true
     }
 
     func start() {

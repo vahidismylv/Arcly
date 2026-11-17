@@ -6,22 +6,30 @@ final class ArcLineChartView: UIView {
         static let dotDiameter: CGFloat = 8
     }
 
+    private let areaLayer = CAGradientLayer()
+    private let areaMask = CAShapeLayer()
     private let lineLayer = CAShapeLayer()
     private let dotLayer = CAShapeLayer()
     private var values: [Double] = []
 
     override init(frame: CGRect) {
         super.init(frame: frame)
-        lineLayer.strokeColor = ArcColor.accentSecondary.cgColor
+        areaLayer.colors = [ArcColor.accent.withAlphaComponent(0.22).cgColor, ArcColor.accent.withAlphaComponent(0).cgColor]
+        areaLayer.startPoint = CGPoint(x: 0.5, y: 0)
+        areaLayer.endPoint = CGPoint(x: 0.5, y: 1)
+        areaLayer.mask = areaMask
+
+        lineLayer.strokeColor = ArcColor.accent.cgColor
         lineLayer.fillColor = nil
         lineLayer.lineWidth = Metrics.lineWidth
         lineLayer.lineCap = .round
         lineLayer.lineJoin = .round
 
-        dotLayer.fillColor = ArcColor.accentSecondary.cgColor
+        dotLayer.fillColor = ArcColor.accent.cgColor
         dotLayer.strokeColor = ArcColor.surface.cgColor
         dotLayer.lineWidth = 2
 
+        layer.addSublayer(areaLayer)
         layer.addSublayer(lineLayer)
         layer.addSublayer(dotLayer)
         isAccessibilityElement = false
@@ -49,6 +57,17 @@ final class ArcLineChartView: UIView {
             points.dropFirst().forEach { line.addLine(to: $0) }
         }
         lineLayer.path = line
+
+        let area = CGMutablePath()
+        if let first = points.first, let last = points.last, points.count > 1 {
+            area.move(to: CGPoint(x: first.x, y: bounds.maxY))
+            points.forEach { area.addLine(to: $0) }
+            area.addLine(to: CGPoint(x: last.x, y: bounds.maxY))
+            area.closeSubpath()
+        }
+        areaLayer.frame = bounds
+        areaMask.frame = bounds
+        areaMask.path = area
 
         if let last = points.last {
             let half = Metrics.dotDiameter / 2

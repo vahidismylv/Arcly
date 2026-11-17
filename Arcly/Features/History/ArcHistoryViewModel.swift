@@ -2,48 +2,87 @@ import Combine
 import Foundation
 
 final class ArcHistoryViewModel {
-    struct Section: Hashable, Identifiable {
-        let id: Date
-        let title: String
-        let rowIDs: [ArcFast.ID]
+    struct CalendarDay: Equatable {
+        let date: Date
+        let number: String
+        let status: ArcDayStatus
+        let isSelected: Bool
+        let isToday: Bool
+        let isFuture: Bool
+        let accessibilityLabel: String
     }
 
-    struct Row: Equatable {
-        let title: String
-        let subtitle: String
+    struct Session: Equatable {
+        let id: ArcFast.ID
+        let duration: String
+        let timeRange: String
         let status: ArcFastStatus
+        let statusText: String
+        let accessibilityLabel: String
     }
 
     struct State: Equatable {
-        var sections: [Section]
-        var rows: [ArcFast.ID: Row]
-
-        var isEmpty: Bool {
-            sections.isEmpty
-        }
+        var monthTitle: String
+        var canShowNextMonth: Bool
+        var weekdaySymbols: [String]
+        var days: [CalendarDay?]
+        var selectedDayTitle: String
+        var sessions: [Session]
+        var emptyMessage: String
     }
 
-    @Published private(set) var state = State(sections: [], rows: [:])
+    @Published private(set) var state: State
 
     var onEditFast: ((ArcFast.ID) -> Void)?
 
     private let store: ArcFastStore
     private let calendar: Calendar
+    private let activity: ArcDailyActivity
     private let now: () -> Date
+    private var displayedMonth: Date
+    private var selectedDay: Date
     private var cancellable: AnyCancellable?
 
     init(store: ArcFastStore, calendar: Calendar = .current, now: @escaping () -> Date = Date.init) {
         self.store = store
         self.calendar = calendar
+        self.activity = ArcDailyActivity(calendar: calendar)
         self.now = now
-        cancellable = store.$fasts.sink { [weak self] fasts in
-            self?.rebuild(from: fasts)
+        let today = calendar.startOfDay(for: now())
+        selectedDay = today
+        displayedMonth = calendar.dateInterval(of: .month, for: today)?.start ?? today
+        state = Self.makeState(
+            fasts: store.fasts,
+            displayedMonth: displayedMonth,
+            selectedDay: selectedDay,
+            activity: activity,
+            calendar: calendar,
+            now: now()
+        )
+        cancellable = store.$fasts.dropFirst().sink { [weak self] fasts in
+            self?.rebuild(fasts: fasts)
         }
     }
 
-    // The running fast's row shows elapsed time, which only needs to be fresh when the list appears.
+    // Running fasts show elapsed time, and "today" moves at midnight, so the list is refreshed on appear.
     func refresh() {
-        rebuild(from: store.fasts)
+        rebuild(fasts: store.fasts)
+    }
+
+    func showPreviousMonth() {
+        moveMonth(by: -1)
+    }
+
+    func showNextMonth() {
+        guard state.canShowNextMonth else { return }
+        moveMonth(by: 1)
+    }
+
+    func select(day: Date) {
+        let day = calendar.startOfDay(for: day)
+        guard day <= calendar.startOfDay(for: now()) else { return }
+        selectedDay = day
+        rebuild(fasts: store.fasts)
     }
 
     func editFast(id: ArcFast.ID) {
@@ -56,43 +95,117 @@ final class ArcHistoryViewModel {
 
     // MARK: - State
 
-    private func rebuild(from fasts: [ArcFast]) {
-        let date = now()
-        let newestFirst = fasts.sorted { $0.startDate > $1.startDate }
-        let byMonth = Dictionary(grouping: newestFirst) { monthStart(of: $0.startDate) }
+    private func moveMonth(by value: Int) {
+        guard let month = calendar.date(byAdding: .month, value: value, to: displayedMonth) else { return }
+        displayedMonth = month
+        rebuild(fasts: store.fasts)
+    }
 
-        let sections = byMonth.keys.sorted(by: >).map { month in
-            Section(
-                id: month,
-                title: month.formatted(.dateTime.month(.wide).year()),
-                rowIDs: (byMonth[month] ?? []).map(\.id)
-            )
-        }
-        let rows = Dictionary(uniqueKeysWithValues: newestFirst.map { ($0.id, row(for: $0, now: date)) })
-
-        let newState = State(sections: sections, rows: rows)
+    private func rebuild(fasts: [ArcFast]) {
+        let newState = Self.makeState(
+            fasts: fasts,
+            displayedMonth: displayedMonth,
+            selectedDay: selectedDay,
+            activity: activity,
+            calendar: calendar,
+            now: now()
+        )
         if newState != state {
             state = newState
         }
     }
 
-    private func row(for fast: ArcFast, now: Date) -> Row {
-        let duration = ArcDurationFormatter.short(fast.duration(at: now))
-        let target = ArcDurationFormatter.short(fast.targetDuration)
-        let statusText = switch fast.status {
-        case .active: String(localized: "In progress")
-        case .completed: String(localized: "Completed")
-        case .endedEarly: String(localized: "Ended early")
+    private static func makeState(
+        fasts: [ArcFast],
+        displayedMonth: Date,
+        selectedDay: Date,
+        activity: ArcDailyActivity,
+        calendar: Calendar,
+        now: Date
+    ) -> State {
+        let today = calendar.startOfDay(for: now)
+        let currentMonth = calendar.dateInterval(of: .month, for: today)?.start ?? today
+
+        let days = activity.monthGrid(containing: displayedMonth).map { date -> CalendarDay? in
+            guard let date else { return nil }
+            return calendarDay(
+                for: date,
+                status: activity.status(on: date, in: fasts),
+                selectedDay: selectedDay,
+                today: today
+            )
         }
 
-        return Row(
-            title: fast.startDate.formatted(.dateTime.weekday(.abbreviated).month(.abbreviated).day()),
-            subtitle: String(localized: "\(duration) of \(target) · \(statusText)"),
-            status: fast.status
+        let sessions = activity.fasts(startingOn: selectedDay, in: fasts).map {
+            session(for: $0, calendar: calendar, now: now)
+        }
+
+        return State(
+            monthTitle: displayedMonth.formatted(.dateTime.month(.wide).year()),
+            canShowNextMonth: displayedMonth < currentMonth,
+            weekdaySymbols: activity.orderedWeekdaySymbols(calendar.veryShortStandaloneWeekdaySymbols),
+            days: days,
+            selectedDayTitle: ArcDateFormatter.longDay(selectedDay),
+            sessions: sessions,
+            emptyMessage: fasts.isEmpty
+                ? String(localized: "Your sessions will appear here after your first fast.")
+                : String(localized: "No sessions started on this day.")
         )
     }
 
-    private func monthStart(of date: Date) -> Date {
-        calendar.dateInterval(of: .month, for: date)?.start ?? calendar.startOfDay(for: date)
+    private static func calendarDay(for date: Date, status: ArcDayStatus, selectedDay: Date, today: Date) -> CalendarDay {
+        let isSelected = date == selectedDay
+        var parts = [ArcDateFormatter.longDay(date)]
+        switch status {
+        case .completed: parts.append(String(localized: "goal reached"))
+        case .endedEarly: parts.append(String(localized: "ended early"))
+        case .active: parts.append(String(localized: "fasting now"))
+        case .none: break
+        }
+
+        return CalendarDay(
+            date: date,
+            number: date.formatted(.dateTime.day()),
+            status: status,
+            isSelected: isSelected,
+            isToday: date == today,
+            isFuture: date > today,
+            accessibilityLabel: parts.joined(separator: ", ")
+        )
+    }
+
+    private static func session(for fast: ArcFast, calendar: Calendar, now: Date) -> Session {
+        let duration = ArcDurationFormatter.short(fast.duration(at: now))
+        let statusText = switch fast.status {
+        case .active: String(localized: "In progress")
+        case .completed: String(localized: "Goal reached")
+        case .endedEarly: String(localized: "Ended early")
+        }
+
+        let start = ArcDateFormatter.time(fast.startDate)
+        let timeRange: String
+        if let endDate = fast.endDate {
+            let end = ArcDateFormatter.time(endDate)
+            if calendar.isDate(endDate, inSameDayAs: fast.startDate) {
+                timeRange = "\(start) – \(end)"
+            } else {
+                // The day is already in the section title, but crossing midnight needs both dates spelled out.
+                let startDay = fast.startDate.formatted(.dateTime.day().month(.abbreviated))
+                let endDay = endDate.formatted(.dateTime.day().month(.abbreviated))
+                timeRange = "\(startDay), \(start) – \(endDay), \(end)"
+            }
+        } else {
+            timeRange = String(localized: "Since \(start)")
+        }
+
+        let goal = ArcDurationFormatter.short(fast.targetDuration)
+        return Session(
+            id: fast.id,
+            duration: duration,
+            timeRange: timeRange,
+            status: fast.status,
+            statusText: statusText,
+            accessibilityLabel: String(localized: "\(duration) of \(goal) goal, \(timeRange), \(statusText)")
+        )
     }
 }

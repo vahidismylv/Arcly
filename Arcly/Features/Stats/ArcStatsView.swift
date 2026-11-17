@@ -2,25 +2,29 @@ import UIKit
 
 final class ArcStatsView: UIView {
     let rangeControl: UISegmentedControl
-    let logWeightButton = ArcButton(style: .primary)
+    let logWeightButton = ArcButton(style: .outline)
 
-    private let metricsGrid = UIStackView()
-    private var metricCards: [ArcStatCardView] = []
-    private var metricRows: [UIStackView] = []
+    private let sessionsCard = ArcStatCardView()
+    private let averageCard = ArcStatCardView()
+    private let metricsRow = UIStackView()
     private let barChart = ArcBarChartView()
-    private let weightSection = UIStackView()
+    private let chartCaptionLabel = UILabel()
+    private lazy var weightCard = makeWeightCard()
     private let latestWeightLabel = UILabel()
+    private let lastEntryLabel = UILabel()
     private let weightChangeLabel = UILabel()
+    private let weightEmptyLabel = UILabel()
     private let weightChart = ArcLineChartView()
-    private let recentEntriesStack = UIStackView()
+    private let bestStreakRow = ArcValueRow(title: String(localized: "Longest streak"), isInteractive: false)
 
     init(ranges: [ArcStatsViewModel.Range]) {
         rangeControl = UISegmentedControl(items: ranges.map(\.title))
         super.init(frame: .zero)
         backgroundColor = ArcColor.background
         setUpLayout()
+        updateMetricsAxis()
         registerForTraitChanges([UITraitPreferredContentSizeCategory.self]) { (view: ArcStatsView, _: UITraitCollection) in
-            view.updateMetricRowsAxis()
+            view.updateMetricsAxis()
         }
     }
 
@@ -30,19 +34,21 @@ final class ArcStatsView: UIView {
     }
 
     func configure(with state: ArcStatsViewModel.State, ranges: [ArcStatsViewModel.Range], animated: Bool) {
-        if metricCards.count != state.metrics.count {
-            rebuildMetricCards(count: state.metrics.count)
-        }
-        for (card, metric) in zip(metricCards, state.metrics) {
-            card.configure(title: metric.title, value: metric.value, accessibilityValue: metric.accessibilityValue)
-        }
-
         rangeControl.selectedSegmentIndex = ranges.firstIndex(of: state.range) ?? 0
+        sessionsCard.configure(title: String(localized: "Sessions"), value: state.sessionsValue)
+        averageCard.configure(
+            title: String(localized: "Average"),
+            value: state.averageValue,
+            accessibilityValue: state.averageAccessibilityValue
+        )
+
         barChart.configure(with: state.chart, animated: animated)
         barChart.accessibilityLabel = String(localized: "Fasting duration, last \(state.range.title)")
         barChart.accessibilityValue = state.chartAccessibilityValue
+        chartCaptionLabel.text = state.chartCaption
+        bestStreakRow.value = state.bestStreakValue
 
-        weightSection.isHidden = state.weight == nil
+        weightCard.isHidden = state.weight == nil
         if let weight = state.weight {
             configureWeight(weight)
         }
@@ -51,12 +57,32 @@ final class ArcStatsView: UIView {
     // MARK: - Layout
 
     private func setUpLayout() {
-        metricsGrid.axis = .vertical
-        metricsGrid.spacing = ArcSpacing.s
+        let titleLabel = UILabel()
+        titleLabel.text = String(localized: "Your progress")
+        titleLabel.font = ArcFont.text(.largeTitle, weight: .bold)
+        titleLabel.textColor = ArcColor.textPrimary
+        titleLabel.numberOfLines = 0
+        titleLabel.adjustsFontForContentSizeCategory = true
+        titleLabel.accessibilityTraits = .header
 
-        let content = UIStackView(arrangedSubviews: [metricsGrid, makeDurationSection(), makeWeightSection()])
+        rangeControl.accessibilityLabel = String(localized: "Period")
+
+        metricsRow.addArrangedSubview(sessionsCard)
+        metricsRow.addArrangedSubview(averageCard)
+        metricsRow.distribution = .fillEqually
+        metricsRow.spacing = ArcSpacing.s + 4
+
+        let content = UIStackView(arrangedSubviews: [
+            titleLabel,
+            rangeControl,
+            metricsRow,
+            makeDurationCard(),
+            weightCard,
+            ArcCardView(content: bestStreakRow, insets: .uniform(0))
+        ])
         content.axis = .vertical
-        content.spacing = ArcSpacing.l
+        content.spacing = ArcSpacing.m - 4
+        content.setCustomSpacing(ArcSpacing.m, after: titleLabel)
 
         let scrollView = UIScrollView()
         scrollView.translatesAutoresizingMaskIntoConstraints = false
@@ -66,127 +92,86 @@ final class ArcStatsView: UIView {
 
         let guide = scrollView.contentLayoutGuide
         NSLayoutConstraint.activate([
-            scrollView.topAnchor.constraint(equalTo: topAnchor),
+            scrollView.topAnchor.constraint(equalTo: safeAreaLayoutGuide.topAnchor),
             scrollView.leadingAnchor.constraint(equalTo: leadingAnchor),
             scrollView.trailingAnchor.constraint(equalTo: trailingAnchor),
             scrollView.bottomAnchor.constraint(equalTo: bottomAnchor),
 
             guide.widthAnchor.constraint(equalTo: scrollView.frameLayoutGuide.widthAnchor),
             content.topAnchor.constraint(equalTo: guide.topAnchor, constant: ArcSpacing.s),
-            content.leadingAnchor.constraint(equalTo: guide.leadingAnchor, constant: ArcSpacing.m),
-            content.trailingAnchor.constraint(equalTo: guide.trailingAnchor, constant: -ArcSpacing.m),
-            content.bottomAnchor.constraint(equalTo: guide.bottomAnchor, constant: -ArcSpacing.l)
+            content.leadingAnchor.constraint(equalTo: guide.leadingAnchor, constant: ArcSpacing.m + 4),
+            content.trailingAnchor.constraint(equalTo: guide.trailingAnchor, constant: -(ArcSpacing.m + 4)),
+            content.bottomAnchor.constraint(equalTo: guide.bottomAnchor, constant: -ArcSpacing.l),
+            rangeControl.heightAnchor.constraint(greaterThanOrEqualToConstant: 36)
         ])
     }
 
-    private func makeDurationSection() -> UIView {
-        rangeControl.selectedSegmentTintColor = ArcColor.accent
-        rangeControl.setTitleTextAttributes([.foregroundColor: ArcColor.textPrimary], for: .selected)
-        rangeControl.setTitleTextAttributes([.foregroundColor: ArcColor.textSecondary], for: .normal)
+    private func makeDurationCard() -> UIView {
+        barChart.heightAnchor.constraint(equalToConstant: 200).isActive = true
 
-        barChart.heightAnchor.constraint(equalToConstant: 180).isActive = true
+        chartCaptionLabel.font = ArcFont.text(.footnote)
+        chartCaptionLabel.textColor = ArcColor.textSecondary
+        chartCaptionLabel.numberOfLines = 0
+        chartCaptionLabel.adjustsFontForContentSizeCategory = true
 
-        let card = UIStackView(arrangedSubviews: [rangeControl, barChart])
-        card.axis = .vertical
-        card.spacing = ArcSpacing.m
-        return makeSection(title: String(localized: "Fasting duration"), content: ArcCardView(content: card))
+        let stack = UIStackView(arrangedSubviews: [
+            ArcSectionHeaderLabel(text: String(localized: "Duration")),
+            barChart,
+            chartCaptionLabel
+        ])
+        stack.axis = .vertical
+        stack.spacing = ArcSpacing.m - 4
+        return ArcCardView(content: stack)
     }
 
-    private func makeWeightSection() -> UIView {
-        latestWeightLabel.font = ArcFont.digits(size: 28, weight: .bold, relativeTo: .title1)
+    private func makeWeightCard() -> UIView {
+        logWeightButton.symbolName = "plus"
+        logWeightButton.setContentHuggingPriority(.required, for: .horizontal)
+        let header = UIStackView(arrangedSubviews: [ArcSectionHeaderLabel(text: String(localized: "Weight")), logWeightButton])
+        header.alignment = .center
+        header.spacing = ArcSpacing.s
+
+        latestWeightLabel.font = ArcFont.digits(size: 32, weight: .bold, relativeTo: .title1)
         latestWeightLabel.textColor = ArcColor.textPrimary
-        weightChangeLabel.font = ArcFont.text(.subheadline)
-        weightChangeLabel.textColor = ArcColor.textSecondary
-        for label in [latestWeightLabel, weightChangeLabel] {
-            label.adjustsFontForContentSizeCategory = true
+        lastEntryLabel.font = ArcFont.text(.footnote)
+        lastEntryLabel.textColor = ArcColor.textSecondary
+        weightChangeLabel.font = ArcFont.text(.subheadline, weight: .medium)
+        weightChangeLabel.textColor = ArcColor.textPrimary
+        weightEmptyLabel.font = ArcFont.text(.subheadline)
+        weightEmptyLabel.textColor = ArcColor.textSecondary
+        for label in [latestWeightLabel, lastEntryLabel, weightChangeLabel, weightEmptyLabel] {
             label.numberOfLines = 0
+            label.adjustsFontForContentSizeCategory = true
         }
 
         weightChart.heightAnchor.constraint(equalToConstant: 72).isActive = true
-        recentEntriesStack.axis = .vertical
-        recentEntriesStack.spacing = ArcSpacing.s
-        logWeightButton.text = String(localized: "Log weight")
-        logWeightButton.symbolName = "plus"
 
-        let card = UIStackView(arrangedSubviews: [latestWeightLabel, weightChangeLabel, weightChart, recentEntriesStack, logWeightButton])
-        card.axis = .vertical
-        card.spacing = ArcSpacing.s
-        card.setCustomSpacing(ArcSpacing.m, after: weightChart)
-        card.setCustomSpacing(ArcSpacing.m, after: recentEntriesStack)
-
-        let section = makeSection(title: String(localized: "Weight"), content: ArcCardView(content: card))
-        weightSection.addArrangedSubview(section)
-        weightSection.isHidden = true
-        return weightSection
-    }
-
-    private func makeSection(title: String, content: UIView) -> UIView {
-        let header = UILabel()
-        header.text = title
-        header.font = ArcFont.text(.subheadline, weight: .semibold)
-        header.textColor = ArcColor.textSecondary
-        header.adjustsFontForContentSizeCategory = true
-        header.accessibilityTraits = .header
-
-        let section = UIStackView(arrangedSubviews: [header, content])
-        section.axis = .vertical
-        section.spacing = ArcSpacing.s
-        return section
-    }
-
-    private func rebuildMetricCards(count: Int) {
-        metricsGrid.arrangedSubviews.forEach { $0.removeFromSuperview() }
-        metricCards = (0..<count).map { _ in ArcStatCardView() }
-        metricRows = stride(from: 0, to: count, by: 2).map { start in
-            let cards: [UIView] = Array(metricCards[start..<min(start + 2, count)])
-            let row = UIStackView(arrangedSubviews: cards.count == 2 ? cards : cards + [UIView()])
-            row.distribution = .fillEqually
-            row.spacing = ArcSpacing.s
-            metricsGrid.addArrangedSubview(row)
-            return row
-        }
-        updateMetricRowsAxis()
-    }
-
-    private func updateMetricRowsAxis() {
-        let isAccessibilitySize = traitCollection.preferredContentSizeCategory.isAccessibilityCategory
-        metricRows.forEach { $0.axis = isAccessibilitySize ? .vertical : .horizontal }
+        let stack = UIStackView(arrangedSubviews: [header, latestWeightLabel, lastEntryLabel, weightChangeLabel, weightChart, weightEmptyLabel])
+        stack.axis = .vertical
+        stack.spacing = ArcSpacing.xs
+        stack.setCustomSpacing(ArcSpacing.s, after: header)
+        stack.setCustomSpacing(ArcSpacing.m - 4, after: weightChangeLabel)
+        let card = ArcCardView(content: stack)
+        card.isHidden = true
+        return card
     }
 
     private func configureWeight(_ weight: ArcStatsViewModel.Weight) {
+        logWeightButton.text = weight.buttonTitle
         latestWeightLabel.text = weight.latest
+        latestWeightLabel.isHidden = weight.latest == nil
+        latestWeightLabel.accessibilityValue = weight.accessibilityValue
+        lastEntryLabel.text = weight.lastEntry
+        lastEntryLabel.isHidden = weight.lastEntry == nil
         weightChangeLabel.text = weight.change
         weightChangeLabel.isHidden = weight.change == nil
+        weightEmptyLabel.text = weight.emptyMessage
+        weightEmptyLabel.isHidden = weight.emptyMessage == nil
         weightChart.configure(with: weight.chartValues)
         weightChart.isHidden = weight.chartValues.count < 2
-
-        recentEntriesStack.arrangedSubviews.forEach { $0.removeFromSuperview() }
-        for entry in weight.recentEntries {
-            recentEntriesStack.addArrangedSubview(makeEntryRow(entry))
-        }
     }
 
-    private func makeEntryRow(_ entry: ArcStatsViewModel.Weight.Entry) -> UIView {
-        let dateLabel = UILabel()
-        dateLabel.text = entry.date
-        dateLabel.font = ArcFont.text(.subheadline)
-        dateLabel.textColor = ArcColor.textSecondary
-
-        let valueLabel = UILabel()
-        valueLabel.text = entry.value
-        valueLabel.font = ArcFont.digits(size: 15, weight: .medium, relativeTo: .subheadline)
-        valueLabel.textColor = ArcColor.textPrimary
-        valueLabel.setContentHuggingPriority(.required, for: .horizontal)
-
-        for label in [dateLabel, valueLabel] {
-            label.adjustsFontForContentSizeCategory = true
-        }
-
-        let row = UIStackView(arrangedSubviews: [dateLabel, valueLabel])
-        row.spacing = ArcSpacing.s
-        row.isAccessibilityElement = true
-        row.accessibilityLabel = entry.date
-        row.accessibilityValue = entry.value
-        return row
+    private func updateMetricsAxis() {
+        metricsRow.axis = traitCollection.preferredContentSizeCategory.isAccessibilityCategory ? .vertical : .horizontal
     }
 }

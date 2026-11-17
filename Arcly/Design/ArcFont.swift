@@ -1,4 +1,3 @@
-import CoreText
 import UIKit
 
 enum ArcFont {
@@ -8,26 +7,21 @@ enum ArcFont {
         maximumPointSize: CGFloat? = nil
     ) -> UIFont {
         let font = UIFont.systemFont(ofSize: defaultPointSize(for: style), weight: weight)
-        let metrics = UIFontMetrics(forTextStyle: style)
-        guard let maximumPointSize else { return metrics.scaledFont(for: font) }
-        return metrics.scaledFont(for: font, maximumPointSize: maximumPointSize)
+        return scaled(font, relativeTo: style, maximumPointSize: maximumPointSize)
     }
 
+    /// Fixed-width digits so a ticking timer never shifts horizontally.
     static func digits(
         size: CGFloat,
         weight: UIFont.Weight = .semibold,
         relativeTo style: UIFont.TextStyle = .body,
         maximumPointSize: CGFloat? = nil
     ) -> UIFont {
-        let base = UIFont.systemFont(ofSize: size, weight: weight)
-        let descriptor = (base.fontDescriptor.withDesign(.rounded) ?? base.fontDescriptor)
-            .addingAttributes([
-                .featureSettings: [[
-                    UIFontDescriptor.FeatureKey.type: kNumberSpacingType,
-                    UIFontDescriptor.FeatureKey.selector: kMonospacedNumbersSelector
-                ]]
-            ])
-        let font = UIFont(descriptor: descriptor, size: size)
+        let font = UIFont.monospacedDigitSystemFont(ofSize: size, weight: weight)
+        return scaled(font, relativeTo: style, maximumPointSize: maximumPointSize)
+    }
+
+    private static func scaled(_ font: UIFont, relativeTo style: UIFont.TextStyle, maximumPointSize: CGFloat?) -> UIFont {
         let metrics = UIFontMetrics(forTextStyle: style)
         guard let maximumPointSize else { return metrics.scaledFont(for: font) }
         return metrics.scaledFont(for: font, maximumPointSize: maximumPointSize)

@@ -1,9 +1,6 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
-    "%@ in this period" : {
-
-    },
     "%@ of %@" : {
       "localizations" : {
         "en" : {
@@ -24,24 +21,57 @@
         }
       }
     },
-    "%@ of %@ · %@" : {
+    "%@ of %@ goal, %@, %@" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "new",
-            "value" : "%1$@ of %2$@ · %3$@"
+            "value" : "%1$@ of %2$@ goal, %3$@, %4$@"
           }
         }
       }
     },
-    "%@ since last fast" : {
+    "%@ over %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ over %2$@"
+          }
+        }
+      }
+    },
+    "%@ past your goal" : {
+
+    },
+    "%@ since your last fast" : {
 
     },
     "%@ to goal" : {
 
     },
-    "%lld day streak" : {
+    "%@ · next day" : {
 
+    },
+    "%@, %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@, %2$@"
+          }
+        }
+      }
+    },
+    "%@: %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@: %2$@"
+          }
+        }
+      }
     },
     "%lld days" : {
       "localizations" : {
@@ -65,7 +95,42 @@
         }
       }
     },
+    "%lld days in a row" : {
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld day in a row"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld days in a row"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%lld h fasting · %lld h eating" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$lld h fasting · %2$lld h eating"
+          }
+        }
+      }
+    },
     "%lld hours" : {
+
+    },
+    "%lldh" : {
 
     },
     "%lldh fast · %lldh eat" : {
@@ -106,26 +171,23 @@
     "Average" : {
 
     },
-    "Average %@. Goal reached on %lld of %lld days." : {
+    "Average %@. Goal reached on %lld of %lld days with a fast." : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "new",
-            "value" : "Average %1$@. Goal reached on %2$lld of %3$lld days."
+            "value" : "Average %1$@. Goal reached on %2$lld of %3$lld days with a fast."
           }
         }
       }
     },
-    "Best streak" : {
-
-    },
     "Cancel" : {
 
     },
-    "Completed" : {
+    "Changes apply from your next fast." : {
 
     },
-    "Current streak" : {
+    "Choose your rhythm" : {
 
     },
     "Custom" : {
@@ -137,7 +199,13 @@
     "Delete this fast?" : {
 
     },
-    "Eating window" : {
+    "Duration" : {
+
+    },
+    "Each bar is the longest finished fast that started that day." : {
+
+    },
+    "Eating" : {
 
     },
     "Edit Fast" : {
@@ -152,10 +220,19 @@
     "End can't be in the future." : {
 
     },
+    "End fast" : {
+
+    },
     "End fast early?" : {
 
     },
     "End must be after start." : {
+
+    },
+    "End your fast whenever you're ready" : {
+
+    },
+    "Ended" : {
 
     },
     "Ended early" : {
@@ -177,18 +254,15 @@
     "Fasting" : {
 
     },
-    "Fasting duration" : {
-
-    },
     "Fasting duration, last %@" : {
 
     },
-    "Fasting from %@ to %@" : {
+    "Fasting from %@ to %@, eating until %@" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "new",
-            "value" : "Fasting from %1$@ to %2$@"
+            "value" : "Fasting from %1$@ to %2$@, eating until %3$@"
           }
         }
       }
@@ -199,22 +273,22 @@
     "Fasting hours" : {
 
     },
+    "Fasting protocol" : {
+
+    },
     "Fasting start" : {
 
     },
     "Fasting starts at" : {
 
     },
-    "Fasting timer" : {
-
-    },
-    "Fasting window" : {
-
-    },
-    "Finished fasts will show up here." : {
+    "Goal" : {
 
     },
     "Goal reached" : {
+
+    },
+    "Hides the time picker." : {
 
     },
     "History" : {
@@ -229,61 +303,145 @@
     "Keep Fasting" : {
 
     },
+    "Last entry · %@" : {
+
+    },
+    "Last fast" : {
+
+    },
+    "Log" : {
+
+    },
     "Log Weight" : {
+
+    },
+    "Log first weight" : {
 
     },
     "Log weight" : {
 
     },
-    "Longest" : {
+    "Log your first weight to see how it changes over time." : {
 
     },
-    "No data yet" : {
+    "Longest streak" : {
+
+    },
+    "Marks show each fast's own goal." : {
+
+    },
+    "Next fast: %@" : {
+
+    },
+    "Next month" : {
 
     },
     "No entries yet" : {
 
     },
-    "No fast in progress" : {
-
-    },
-    "No fasts yet" : {
+    "No fast yet" : {
 
     },
     "No finished fasts in this period" : {
 
     },
+    "No finished fasts in this period yet." : {
+
+    },
+    "No finished fasts yet" : {
+
+    },
+    "No sessions started on this day." : {
+
+    },
+    "Notifications" : {
+
+    },
+    "Notifications are off" : {
+
+    },
+    "Notifications are on" : {
+
+    },
+    "Notifications not set up" : {
+
+    },
     "OMAD" : {
+
+    },
+    "Open Settings" : {
+
+    },
+    "Opens the editor." : {
+
+    },
+    "Opens your schedule." : {
+
+    },
+    "Period" : {
+
+    },
+    "Pick the rhythm that suits you, then start your first fast whenever you're ready." : {
+
+    },
+    "Previous month" : {
+
+    },
+    "Progress" : {
 
     },
     "Protocol" : {
 
     },
+    "Ready when you are" : {
+
+    },
     "Reminders" : {
+
+    },
+    "Reminders follow the toggles in your schedule." : {
+
+    },
+    "Save" : {
 
     },
     "Schedule" : {
 
     },
+    "Sessions" : {
+
+    },
+    "Settings" : {
+
+    },
     "Shortly before the goal" : {
+
+    },
+    "Show weight tracking in Progress" : {
+
+    },
+    "Shows a time picker." : {
+
+    },
+    "Since %@" : {
 
     },
     "Start" : {
 
     },
-    "Start Fast" : {
-
-    },
     "Start can't be in the future." : {
 
     },
-    "Start your first fast" : {
+    "Start fast" : {
 
     },
-    "Stats" : {
+    "Started" : {
 
     },
     "This overlaps another fast." : {
+
+    },
+    "Time for yourself." : {
 
     },
     "Time to start fasting" : {
@@ -292,13 +450,28 @@
     "Today" : {
 
     },
-    "Total fasts" : {
+    "Tomorrow" : {
+
+    },
+    "Turn them on in Settings to get reminders about your fasts." : {
+
+    },
+    "Units" : {
 
     },
     "Weight" : {
 
     },
+    "Weight units" : {
+
+    },
     "When your fast hits its goal" : {
+
+    },
+    "Yesterday" : {
+
+    },
+    "You'll be asked when you start your first fast." : {
 
     },
     "You've completed your %@ fast. Nice work." : {
@@ -320,7 +493,43 @@
     "Your %@ fasting window begins now." : {
 
     },
-    "since last fast" : {
+    "Your current fast keeps its %@ goal. Changes apply from your next fast." : {
+
+    },
+    "Your day" : {
+
+    },
+    "Your goal: %@" : {
+
+    },
+    "Your progress" : {
+
+    },
+    "Your rhythm" : {
+
+    },
+    "Your sessions will appear here after your first fast." : {
+
+    },
+    "Your week" : {
+
+    },
+    "ended early" : {
+
+    },
+    "fasting now" : {
+
+    },
+    "goal reached" : {
+
+    },
+    "hours fasted" : {
+
+    },
+    "no fast" : {
+
+    },
+    "since your last fast" : {
 
     }
   },

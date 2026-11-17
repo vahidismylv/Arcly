@@ -14,29 +14,25 @@ final class ArcStatsViewModel {
         }
     }
 
-    struct Metric: Equatable {
-        let title: String
-        let value: String
-        let accessibilityValue: String?
-    }
-
     struct Weight: Equatable {
-        struct Entry: Equatable {
-            let date: String
-            let value: String
-        }
-
-        let latest: String
+        let latest: String?
+        let lastEntry: String?
         let change: String?
         let chartValues: [Double]
-        let recentEntries: [Entry]
+        let emptyMessage: String?
+        let buttonTitle: String
+        let accessibilityValue: String
     }
 
     struct State: Equatable {
         var range: Range
-        var metrics: [Metric]
+        var sessionsValue: String
+        var averageValue: String
+        var averageAccessibilityValue: String
         var chart: ArcBarChartModel
+        var chartCaption: String
         var chartAccessibilityValue: String
+        var bestStreakValue: String
         var weight: Weight?
     }
 
@@ -46,6 +42,7 @@ final class ArcStatsViewModel {
 
     private let store: ArcFastStore
     private let calculator: ArcStatsCalculator
+    private let streaks: ArcStreakCalculator
     private let now: () -> Date
     private var range = Range.week
     private var cancellable: AnyCancellable?
@@ -53,27 +50,28 @@ final class ArcStatsViewModel {
     init(store: ArcFastStore, calendar: Calendar = .current, now: @escaping () -> Date = Date.init) {
         self.store = store
         self.calculator = ArcStatsCalculator(calendar: calendar)
+        self.streaks = ArcStreakCalculator(calendar: calendar)
         self.now = now
         state = Self.makeState(
             fasts: store.fasts,
-            schedule: store.schedule,
             weightEntries: store.weightEntries,
             preferences: store.preferences,
             range: .week,
             calculator: calculator,
+            streaks: streaks,
             now: now()
         )
 
         // @Published emits before the store's properties are assigned, so the emitted values are used directly.
-        cancellable = Publishers.CombineLatest4(store.$fasts, store.$schedule, store.$weightEntries, store.$preferences)
+        cancellable = Publishers.CombineLatest3(store.$fasts, store.$weightEntries, store.$preferences)
             .dropFirst()
-            .sink { [weak self] fasts, schedule, weightEntries, preferences in
-                self?.update(fasts: fasts, schedule: schedule, weightEntries: weightEntries, preferences: preferences)
+            .sink { [weak self] fasts, weightEntries, preferences in
+                self?.update(fasts: fasts, weightEntries: weightEntries, preferences: preferences)
             }
     }
 
     func refresh() {
-        update(fasts: store.fasts, schedule: store.schedule, weightEntries: store.weightEntries, preferences: store.preferences)
+        update(fasts: store.fasts, weightEntries: store.weightEntries, preferences: store.preferences)
     }
 
     func selectRange(_ range: Range) {
@@ -87,14 +85,14 @@ final class ArcStatsViewModel {
 
     // MARK: - State
 
-    private func update(fasts: [ArcFast], schedule: ArcSchedule, weightEntries: [ArcWeightEntry], preferences: ArcPreferences) {
+    private func update(fasts: [ArcFast], weightEntries: [ArcWeightEntry], preferences: ArcPreferences) {
         let newState = Self.makeState(
             fasts: fasts,
-            schedule: schedule,
             weightEntries: weightEntries,
             preferences: preferences,
             range: range,
             calculator: calculator,
+            streaks: streaks,
             now: now()
         )
         if newState != state {
@@ -104,62 +102,58 @@ final class ArcStatsViewModel {
 
     private static func makeState(
         fasts: [ArcFast],
-        schedule: ArcSchedule,
         weightEntries: [ArcWeightEntry],
         preferences: ArcPreferences,
         range: Range,
         calculator: ArcStatsCalculator,
+        streaks: ArcStreakCalculator,
         now: Date
     ) -> State {
-        let statistics = calculator.statistics(for: fasts, now: now)
-        let days = calculator.dailyDurations(for: fasts, days: range.rawValue, now: now)
-        let goal = schedule.fastingProtocol.fastingDuration
+        let summary = calculator.periodSummary(for: fasts, days: range.rawValue, now: now)
+        let days = calculator.dailyFasts(for: fasts, days: range.rawValue, now: now)
+        let chart = chart(from: days, range: range)
+        let bestStreak = streaks.bestStreak(in: fasts)
 
         return State(
             range: range,
-            metrics: metrics(from: statistics),
-            chart: chart(from: days, goal: goal, range: range),
-            chartAccessibilityValue: chartSummary(for: days, goal: goal),
+            sessionsValue: summary.sessionCount.formatted(),
+            averageValue: summary.averageDuration.map { ArcDurationFormatter.short($0) } ?? "—",
+            averageAccessibilityValue: summary.averageDuration.map { ArcDurationFormatter.spoken($0) }
+                ?? String(localized: "No finished fasts yet"),
+            chart: chart,
+            chartCaption: chartCaption(for: days, hasSharedGoal: chart.goalLine != nil),
+            chartAccessibilityValue: chartSummary(for: days),
+            bestStreakValue: String(localized: "\(bestStreak) days"),
             weight: preferences.isWeightLogEnabled
-                ? weight(from: calculator.weightTrend(for: weightEntries, days: range.rawValue, now: now), unit: preferences.weightUnit)
+                ? weight(
+                    from: calculator.weightTrend(for: weightEntries, days: range.rawValue, now: now),
+                    unit: preferences.weightUnit,
+                    range: range
+                )
                 : nil
         )
     }
 
-    private static func metrics(from statistics: ArcFastStatistics) -> [Metric] {
-        let placeholder = "—"
-        let noData = String(localized: "No data yet")
-        return [
-            Metric(title: String(localized: "Total fasts"), value: statistics.totalFasts.formatted(), accessibilityValue: nil),
-            Metric(
-                title: String(localized: "Average"),
-                value: statistics.averageDuration.map { ArcDurationFormatter.short($0) } ?? placeholder,
-                accessibilityValue: statistics.averageDuration.map { ArcDurationFormatter.spoken($0) } ?? noData
-            ),
-            Metric(
-                title: String(localized: "Longest"),
-                value: statistics.longestDuration.map { ArcDurationFormatter.short($0) } ?? placeholder,
-                accessibilityValue: statistics.longestDuration.map { ArcDurationFormatter.spoken($0) } ?? noData
-            ),
-            Metric(title: String(localized: "Current streak"), value: String(localized: "\(statistics.currentStreak) days"), accessibilityValue: nil),
-            Metric(title: String(localized: "Best streak"), value: String(localized: "\(statistics.bestStreak) days"), accessibilityValue: nil),
-            Metric(
-                title: String(localized: "Completed"),
-                value: statistics.completionRate.map { $0.formatted(.percent.precision(.fractionLength(0))) } ?? placeholder,
-                accessibilityValue: statistics.completionRate == nil ? noData : nil
-            )
-        ]
-    }
+    // MARK: - Chart
 
-    private static func chart(from days: [ArcDailyDuration], goal: TimeInterval, range: Range) -> ArcBarChartModel {
+    private static func chart(from days: [ArcDailyFast], range: Range) -> ArcBarChartModel {
         let hour: TimeInterval = 3600
         let bars = days.enumerated().map { index, day in
-            ArcBarChartModel.Bar(value: day.duration / hour, label: axisLabel(for: day.day, index: index, count: days.count, range: range))
+            ArcBarChartModel.Bar(
+                value: (day.duration ?? 0) / hour,
+                goal: day.targetDuration.map { $0 / hour },
+                isGoalReached: day.reachedGoal,
+                label: axisLabel(for: day.day, index: index, count: days.count, range: range)
+            )
         }
+
+        // A single dashed goal line is only honest when every fast in the period shared the same goal.
+        let goals = Set(days.compactMap(\.targetDuration))
+        let sharedGoal = goals.count == 1 ? goals.first : nil
         return ArcBarChartModel(
             bars: bars,
-            goal: goal / hour,
-            goalLabel: ArcDurationFormatter.short(goal)
+            goalLine: sharedGoal.map { $0 / hour },
+            goalLabel: sharedGoal.map { ArcDurationFormatter.short($0) }
         )
     }
 
@@ -173,26 +167,52 @@ final class ArcStatsViewModel {
         }
     }
 
-    private static func chartSummary(for days: [ArcDailyDuration], goal: TimeInterval) -> String {
-        let fastingDays = days.filter { $0.duration > 0 }
-        guard !fastingDays.isEmpty else { return String(localized: "No finished fasts in this period") }
-        let average = fastingDays.map(\.duration).reduce(0, +) / Double(fastingDays.count)
-        let reached = days.filter { $0.duration >= goal }.count
-        return String(localized: "Average \(ArcDurationFormatter.spoken(average)). Goal reached on \(reached) of \(days.count) days.")
+    private static func chartCaption(for days: [ArcDailyFast], hasSharedGoal: Bool) -> String {
+        guard days.contains(where: { $0.duration != nil }) else {
+            return String(localized: "No finished fasts in this period yet.")
+        }
+        let rule = String(localized: "Each bar is the longest finished fast that started that day.")
+        guard !hasSharedGoal else { return rule }
+        return rule + " " + String(localized: "Marks show each fast's own goal.")
     }
 
-    private static func weight(from trend: ArcWeightTrend, unit: ArcWeightUnit) -> Weight {
-        Weight(
-            latest: trend.latest.map { ArcWeightFormatter.weight(kilograms: $0.kilograms, unit: unit) }
-                ?? String(localized: "No entries yet"),
-            change: trend.change.map { String(localized: "\(ArcWeightFormatter.change(kilograms: $0, unit: unit)) in this period") },
+    private static func chartSummary(for days: [ArcDailyFast]) -> String {
+        let fastingDays = days.compactMap(\.duration)
+        guard !fastingDays.isEmpty else { return String(localized: "No finished fasts in this period") }
+        let average = fastingDays.reduce(0, +) / Double(fastingDays.count)
+        let reached = days.filter(\.reachedGoal).count
+        return String(localized: "Average \(ArcDurationFormatter.spoken(average)). Goal reached on \(reached) of \(fastingDays.count) days with a fast.")
+    }
+
+    // MARK: - Weight
+
+    // Weight is reported neutrally: a change is a fact, not a success or a failure.
+    private static func weight(from trend: ArcWeightTrend, unit: ArcWeightUnit, range: Range) -> Weight {
+        guard let latest = trend.latest else {
+            return Weight(
+                latest: nil,
+                lastEntry: nil,
+                change: nil,
+                chartValues: [],
+                emptyMessage: String(localized: "Log your first weight to see how it changes over time."),
+                buttonTitle: String(localized: "Log first weight"),
+                accessibilityValue: String(localized: "No entries yet")
+            )
+        }
+
+        let latestText = ArcWeightFormatter.weight(kilograms: latest.kilograms, unit: unit)
+        let lastEntry = String(localized: "Last entry · \(ArcDateFormatter.shortDay(latest.date))")
+        let change = trend.change.map {
+            String(localized: "\(ArcWeightFormatter.change(kilograms: $0, unit: unit)) over \(range.title)")
+        }
+        return Weight(
+            latest: latestText,
+            lastEntry: lastEntry,
+            change: change,
             chartValues: trend.entries.map { unit.value(fromKilograms: $0.kilograms) },
-            recentEntries: trend.entries.suffix(3).reversed().map {
-                Weight.Entry(
-                    date: $0.date.formatted(.dateTime.weekday(.abbreviated).month(.abbreviated).day()),
-                    value: ArcWeightFormatter.weight(kilograms: $0.kilograms, unit: unit)
-                )
-            }
+            emptyMessage: nil,
+            buttonTitle: String(localized: "Log"),
+            accessibilityValue: [latestText, lastEntry, change].compactMap { $0 }.joined(separator: ", ")
         )
     }
 }

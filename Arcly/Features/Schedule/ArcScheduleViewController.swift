@@ -6,11 +6,6 @@ final class ArcScheduleViewController: UIViewController {
     private let contentView: ArcScheduleView
     private var cancellables = Set<AnyCancellable>()
 
-    private lazy var saveButton = UIBarButtonItem(
-        systemItem: .save,
-        primaryAction: UIAction { [weak self] _ in self?.viewModel.save() }
-    )
-
     init(viewModel: ArcScheduleViewModel) {
         self.viewModel = viewModel
         contentView = ArcScheduleView(options: viewModel.options)
@@ -29,11 +24,16 @@ final class ArcScheduleViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         title = String(localized: "Schedule")
-        navigationItem.rightBarButtonItem = saveButton
         contentView.customHoursStepper.minimumValue = Double(viewModel.customHoursRange.lowerBound)
         contentView.customHoursStepper.maximumValue = Double(viewModel.customHoursRange.upperBound)
+        contentView.setPickerExpanded(false, animated: false)
         bindControls()
         bindViewModel()
+    }
+
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        navigationController?.setNavigationBarHidden(false, animated: animated)
     }
 
     private func bindControls() {
@@ -46,6 +46,11 @@ final class ArcScheduleViewController: UIViewController {
             self?.viewModel.setCustomHours(Int(stepper.value))
         }, for: .valueChanged)
 
+        contentView.startTimeRow.addAction(UIAction { [weak self] _ in
+            guard let self else { return }
+            contentView.setPickerExpanded(!contentView.isPickerExpanded, animated: true)
+        }, for: .touchUpInside)
+
         let picker = contentView.startTimePicker
         picker.addAction(UIAction { [weak self] _ in
             self?.viewModel.setStartTime(picker.date)
@@ -54,6 +59,11 @@ final class ArcScheduleViewController: UIViewController {
         bindToggle(contentView.startReminderRow.toggle, to: \.startReminder)
         bindToggle(contentView.goalReminderRow.toggle, to: \.goalReminder)
         bindToggle(contentView.beforeEndReminderRow.toggle, to: \.beforeEndReminder)
+
+        contentView.saveButton.addAction(
+            UIAction { [weak self] _ in self?.viewModel.save() },
+            for: .primaryActionTriggered
+        )
     }
 
     private func bindToggle(_ toggle: UISwitch, to reminder: WritableKeyPath<ArcReminders, Bool>) {
@@ -75,7 +85,6 @@ final class ArcScheduleViewController: UIViewController {
         for (card, content) in zip(contentView.protocolCards, viewModel.options) {
             card.isSelected = content.option == state.selectedOption
         }
-        contentView.setCustomHours(state.customHours, isVisible: state.selectedOption == .custom, animated: isVisible)
 
         // Writing back the same value while the wheel is spinning would make it jump.
         if contentView.startTimePicker.date != state.startTime {
@@ -85,7 +94,6 @@ final class ArcScheduleViewController: UIViewController {
         contentView.goalReminderRow.toggle.setOn(state.reminders.goalReminder, animated: isVisible)
         contentView.beforeEndReminderRow.toggle.setOn(state.reminders.beforeEndReminder, animated: isVisible)
 
-        contentView.previewDial.configure(with: state.preview, animated: false)
-        saveButton.isEnabled = state.canSave
+        contentView.configure(with: state, animated: isVisible)
     }
 }

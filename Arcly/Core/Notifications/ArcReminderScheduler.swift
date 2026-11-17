@@ -31,6 +31,10 @@ final class ArcReminderScheduler {
             }
     }
 
+    func authorizationStatus() async -> UNAuthorizationStatus {
+        await center.notificationSettings().authorizationStatus
+    }
+
     func requestAuthorizationIfNeeded() async {
         let settings = await center.notificationSettings()
         guard settings.authorizationStatus == .notDetermined else { return }

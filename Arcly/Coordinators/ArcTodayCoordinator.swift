@@ -11,7 +11,7 @@ final class ArcTodayCoordinator {
         self.reminderScheduler = reminderScheduler
         navigationController.tabBarItem = UITabBarItem(
             title: String(localized: "Today"),
-            image: UIImage(systemName: "timer"),
+            image: UIImage(systemName: "sun.horizon"),
             selectedImage: nil
         )
     }
@@ -19,6 +19,7 @@ final class ArcTodayCoordinator {
     func start() {
         let viewModel = ArcTodayViewModel(store: store, reminderScheduler: reminderScheduler)
         viewModel.onShowSchedule = { [weak self] in self?.showSchedule() }
+        viewModel.onShowSettings = { [weak self] in self?.showSettings() }
         navigationController.setViewControllers([ArcTodayViewController(viewModel: viewModel)], animated: false)
     }
 
@@ -30,5 +31,19 @@ final class ArcTodayCoordinator {
         let viewController = ArcScheduleViewController(viewModel: viewModel)
         viewController.hidesBottomBarWhenPushed = true
         navigationController.pushViewController(viewController, animated: true)
+    }
+
+    private func showSettings() {
+        let viewModel = ArcSettingsViewModel(store: store, reminderScheduler: reminderScheduler)
+        let settings = UINavigationController(rootViewController: ArcSettingsViewController(viewModel: viewModel))
+        viewModel.onFinish = { [weak settings] in
+            settings?.dismiss(animated: true)
+        }
+        viewModel.onOpenSystemSettings = {
+            guard let url = URL(string: UIApplication.openNotificationSettingsURLString) else { return }
+            UIApplication.shared.open(url)
+        }
+        settings.sheetPresentationController?.prefersGrabberVisible = true
+        navigationController.present(settings, animated: true)
     }
 }

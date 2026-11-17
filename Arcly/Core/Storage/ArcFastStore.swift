@@ -83,13 +83,6 @@ final class ArcFastStore {
 
     // MARK: - Maintenance
 
-    func resetAllData() {
-        fasts = []
-        weightEntries = []
-        schedule = .default
-        preferences = .default
-    }
-
     func flushPendingWrites() {
         storage.waitForPendingWrites()
     }

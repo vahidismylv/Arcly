@@ -17,10 +17,13 @@ enum ArcDurationFormatter {
         return formatter
     }()
 
-    /// "12:30:05" — hours are not capped at 24.
-    static func clock(_ interval: TimeInterval) -> String {
+    /// "12:30" and ":05", so the seconds can be set smaller than the hours. Hours are not capped at 24.
+    static func clockParts(_ interval: TimeInterval) -> (hoursAndMinutes: String, seconds: String) {
         let total = max(0, Int(interval))
-        return String(format: "%02d:%02d:%02d", total / 3600, total / 60 % 60, total % 60)
+        return (
+            String(format: "%02d:%02d", total / 3600, total / 60 % 60),
+            String(format: ":%02d", total % 60)
+        )
     }
 
     /// "4h 12m". Countdowns round up so the last minute never reads as "0m".

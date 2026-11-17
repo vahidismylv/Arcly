@@ -23,25 +23,44 @@ final class ArcTodayViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         title = String(localized: "Today")
+        bindControls()
+        bindViewModel()
+    }
+
+    // The screen draws its own header, so the bar is hidden here and shown again for pushed screens.
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        navigationController?.setNavigationBarHidden(true, animated: animated)
+        viewModel.startUpdating()
+    }
+
+    override func viewWillDisappear(_ animated: Bool) {
+        super.viewWillDisappear(animated)
+        navigationController?.setNavigationBarHidden(false, animated: animated)
+    }
+
+    override func viewDidDisappear(_ animated: Bool) {
+        super.viewDidDisappear(animated)
+        viewModel.stopUpdating()
+    }
+
+    private func bindControls() {
         contentView.actionButton.addAction(
             UIAction { [weak self] _ in self?.actionButtonTapped() },
+            for: .primaryActionTriggered
+        )
+        contentView.settingsButton.addAction(
+            UIAction { [weak self] _ in self?.viewModel.showSettings() },
             for: .primaryActionTriggered
         )
         contentView.protocolChip.addAction(
             UIAction { [weak self] _ in self?.viewModel.showSchedule() },
             for: .primaryActionTriggered
         )
-        bindViewModel()
-    }
-
-    override func viewWillAppear(_ animated: Bool) {
-        super.viewWillAppear(animated)
-        viewModel.startUpdating()
-    }
-
-    override func viewDidDisappear(_ animated: Bool) {
-        super.viewDidDisappear(animated)
-        viewModel.stopUpdating()
+        contentView.chooseRhythmRow.addAction(
+            UIAction { [weak self] _ in self?.viewModel.showSchedule() },
+            for: .touchUpInside
+        )
     }
 
     private func bindViewModel() {
@@ -53,10 +72,7 @@ final class ArcTodayViewController: UIViewController {
             .store(in: &cancellables)
 
         viewModel.goalReached
-            .sink { [weak self] in
-                UINotificationFeedbackGenerator().notificationOccurred(.success)
-                self?.contentView.dialView.pulse()
-            }
+            .sink { UINotificationFeedbackGenerator().notificationOccurred(.success) }
             .store(in: &cancellables)
     }
 

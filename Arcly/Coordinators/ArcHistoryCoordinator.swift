@@ -7,12 +7,13 @@ final class ArcHistoryCoordinator {
 
     init(store: ArcFastStore) {
         self.store = store
-        navigationController.navigationBar.prefersLargeTitles = true
         navigationController.tabBarItem = UITabBarItem(
             title: String(localized: "History"),
-            image: UIImage(systemName: "list.bullet"),
+            image: UIImage(systemName: "calendar"),
             selectedImage: nil
         )
+        // The screen draws its own large title above the calendar.
+        navigationController.isNavigationBarHidden = true
     }
 
     func start() {

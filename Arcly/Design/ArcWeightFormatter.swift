@@ -23,8 +23,11 @@ enum ArcWeightFormatter {
         )
     }
 
+    // The default medium style spells out "pounds" next to "kg"; short keeps both as symbols.
     static func symbol(for unit: ArcWeightUnit) -> String {
-        MeasurementFormatter().string(from: unit.unitMass)
+        let formatter = MeasurementFormatter()
+        formatter.unitStyle = .short
+        return formatter.string(from: unit.unitMass)
     }
 
     private static func measurement(kilograms: Double, unit: ArcWeightUnit) -> Measurement<UnitMass> {

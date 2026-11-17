@@ -6,6 +6,9 @@ final class ArcCardView: UIView {
         backgroundColor = ArcColor.surface
         layer.cornerRadius = ArcRadius.card
         layer.cornerCurve = .continuous
+        layer.borderWidth = ArcBorder.width
+        layer.borderColor = ArcColor.border.cgColor
+        clipsToBounds = true
 
         content.translatesAutoresizingMaskIntoConstraints = false
         addSubview(content)

@@ -16,9 +16,14 @@ final class ArcScheduleViewModel {
     struct State: Equatable {
         var selectedOption: Option
         var customHours: Int
+        var fastingHours: Int
         var startTime: Date
+        var startTimeText: String
+        var goalTimeText: String
+        var rhythmSummary: String
+        var dayScaleAccessibilityValue: String
         var reminders: ArcReminders
-        var preview: ArcDialModel
+        var footnote: String
         var canSave: Bool
     }
 
@@ -67,6 +72,7 @@ final class ArcScheduleViewModel {
             original: original,
             selectedOption: selectedOption,
             customHours: customHours,
+            activeFast: store.activeFast,
             now: now(),
             calendar: calendar
         )
@@ -104,6 +110,7 @@ final class ArcScheduleViewModel {
     }
 
     func save() {
+        guard draft != original else { return }
         store.updateSchedule(draft)
         if draft.reminders.startReminder {
             Task { await reminderScheduler.requestAuthorizationIfNeeded() }
@@ -119,6 +126,7 @@ final class ArcScheduleViewModel {
             original: original,
             selectedOption: selectedOption,
             customHours: customHours,
+            activeFast: store.activeFast,
             now: now(),
             calendar: calendar
         )
@@ -129,36 +137,39 @@ final class ArcScheduleViewModel {
         original: ArcSchedule,
         selectedOption: Option,
         customHours: Int,
+        activeFast: ArcFast?,
         now: Date,
         calendar: Calendar
     ) -> State {
+        let fastingProtocol = draft.fastingProtocol
         let startDate = draft.fastingStartTime.date(on: now, calendar: calendar) ?? now
+        let goalDate = startDate.addingTimeInterval(fastingProtocol.fastingDuration)
+        let startText = ArcDateFormatter.time(startDate)
+        let goalText = ArcDateFormatter.time(goalDate)
+        let endsNextDay = !calendar.isDate(goalDate, inSameDayAs: startDate)
+        let goalTimeText = endsNextDay ? String(localized: "\(goalText) · next day") : goalText
+
+        // An active fast keeps the goal from its own snapshot; edits here only shape the next one.
+        let footnote: String
+        if let activeFast {
+            let target = ArcDurationFormatter.short(activeFast.targetDuration)
+            footnote = String(localized: "Your current fast keeps its \(target) goal. Changes apply from your next fast.")
+        } else {
+            footnote = String(localized: "Changes apply from your next fast.")
+        }
+
         return State(
             selectedOption: selectedOption,
             customHours: customHours,
+            fastingHours: fastingProtocol.fastingHours,
             startTime: startDate,
+            startTimeText: startText,
+            goalTimeText: goalTimeText,
+            rhythmSummary: String(localized: "\(fastingProtocol.fastingHours) h fasting · \(fastingProtocol.eatingHours) h eating"),
+            dayScaleAccessibilityValue: String(localized: "Fasting from \(startText) to \(goalTimeText), eating until \(startText)"),
             reminders: draft.reminders,
-            preview: preview(for: draft, startDate: startDate, now: now, calendar: calendar),
+            footnote: footnote,
             canSave: draft != original
-        )
-    }
-
-    private static func preview(for schedule: ArcSchedule, startDate: Date, now: Date, calendar: Calendar) -> ArcDialModel {
-        let duration = schedule.fastingProtocol.fastingDuration
-        let start = startDate.formatted(date: .omitted, time: .shortened)
-        let end = startDate.addingTimeInterval(duration).formatted(date: .omitted, time: .shortened)
-        let nowTime = ArcTimeOfDay(date: now, calendar: calendar)
-
-        return ArcDialModel(
-            fastingWindowStart: Double(schedule.fastingStartTime.minutesSinceMidnight) / (24 * 60),
-            fastingWindowLength: Double(schedule.fastingProtocol.fastingHours) / 24,
-            currentTime: Double(nowTime.minutesSinceMidnight) / (24 * 60),
-            progress: 0,
-            isGoalReached: false,
-            phase: String(localized: "Fasting window"),
-            elapsed: ArcDurationFormatter.short(duration),
-            detail: "\(start) – \(end)",
-            accessibilityValue: String(localized: "Fasting from \(start) to \(end)")
         )
     }
 

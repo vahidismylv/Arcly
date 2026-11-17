@@ -10,6 +10,7 @@ final class ArcProtocolCardView: UIControl {
 
     override var isHighlighted: Bool {
         didSet {
+            guard isHighlighted != oldValue, !UIAccessibility.isReduceMotionEnabled else { return }
             UIView.animate(springDuration: 0.25, bounce: 0.3) {
                 self.transform = self.isHighlighted ? CGAffineTransform(scaleX: 0.97, y: 0.97) : .identity
             }
@@ -18,17 +19,17 @@ final class ArcProtocolCardView: UIControl {
 
     init(title: String, subtitle: String) {
         super.init(frame: .zero)
-        layer.cornerRadius = ArcRadius.card
+        layer.cornerRadius = ArcRadius.control + 2
         layer.cornerCurve = .continuous
-        layer.borderWidth = 2
 
         titleLabel.text = title
-        titleLabel.font = ArcFont.digits(size: 22, weight: .bold, relativeTo: .title2)
-        titleLabel.textColor = ArcColor.textPrimary
+        titleLabel.font = ArcFont.digits(size: 20, weight: .semibold, relativeTo: .title3)
+        titleLabel.textAlignment = .center
 
         subtitleLabel.text = subtitle
-        subtitleLabel.font = ArcFont.text(.footnote)
+        subtitleLabel.font = ArcFont.text(.caption1)
         subtitleLabel.textColor = ArcColor.textSecondary
+        subtitleLabel.textAlignment = .center
         subtitleLabel.numberOfLines = 0
 
         for label in [titleLabel, subtitleLabel] {
@@ -37,16 +38,16 @@ final class ArcProtocolCardView: UIControl {
 
         let stack = UIStackView(arrangedSubviews: [titleLabel, subtitleLabel])
         stack.axis = .vertical
-        stack.spacing = ArcSpacing.xs
+        stack.spacing = 2
         stack.isUserInteractionEnabled = false
         stack.translatesAutoresizingMaskIntoConstraints = false
         addSubview(stack)
 
         NSLayoutConstraint.activate([
-            stack.topAnchor.constraint(equalTo: topAnchor, constant: ArcSpacing.m),
-            stack.leadingAnchor.constraint(equalTo: leadingAnchor, constant: ArcSpacing.m),
-            stack.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -ArcSpacing.m),
-            stack.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -ArcSpacing.m)
+            stack.topAnchor.constraint(equalTo: topAnchor, constant: ArcSpacing.m - 4),
+            stack.leadingAnchor.constraint(equalTo: leadingAnchor, constant: ArcSpacing.s),
+            stack.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -ArcSpacing.s),
+            stack.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -(ArcSpacing.m - 4))
         ])
 
         isAccessibilityElement = true
@@ -61,8 +62,10 @@ final class ArcProtocolCardView: UIControl {
     }
 
     private func updateAppearance() {
-        backgroundColor = isSelected ? ArcColor.surfaceElevated : ArcColor.surface
-        layer.borderColor = (isSelected ? ArcColor.accent : UIColor.clear).cgColor
+        backgroundColor = isSelected ? ArcColor.accentMuted : ArcColor.surface
+        layer.borderWidth = isSelected ? 1.5 : ArcBorder.width
+        layer.borderColor = (isSelected ? ArcColor.accent : ArcColor.border).cgColor
+        titleLabel.textColor = isSelected ? ArcColor.accent : ArcColor.textPrimary
         accessibilityTraits = isSelected ? [.button, .selected] : .button
     }
 }

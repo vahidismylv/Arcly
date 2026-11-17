@@ -24,7 +24,7 @@ final class ArcStatsViewController: UIViewController {
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        title = String(localized: "Stats")
+        title = String(localized: "Progress")
 
         let rangeControl = contentView.rangeControl
         rangeControl.addAction(UIAction { [weak self] _ in

@@ -1,18 +1,21 @@
 import Foundation
 
-nonisolated struct ArcFastStatistics: Equatable {
-    let totalFasts: Int
+nonisolated struct ArcPeriodSummary: Equatable {
+    let sessionCount: Int
     let averageDuration: TimeInterval?
-    let longestDuration: TimeInterval?
-    let currentStreak: Int
-    let bestStreak: Int
-    /// Share of finished fasts that reached their goal, 0...1.
-    let completionRate: Double?
 }
 
-nonisolated struct ArcDailyDuration: Equatable {
+nonisolated struct ArcDailyFast: Equatable {
     let day: Date
-    let duration: TimeInterval
+    /// The longest finished fast that started on this day, if any.
+    let duration: TimeInterval?
+    /// That fast's own goal, taken from its protocol snapshot.
+    let targetDuration: TimeInterval?
+
+    var reachedGoal: Bool {
+        guard let duration, let targetDuration else { return false }
+        return duration >= targetDuration
+    }
 }
 
 nonisolated struct ArcWeightTrend: Equatable {
@@ -23,51 +26,60 @@ nonisolated struct ArcWeightTrend: Equatable {
     let change: Double?
 }
 
+/// Period figures for Progress. A period is the last `days` calendar days including today,
+/// and a fast belongs to the day it started on, like in History. A running fast has no
+/// final duration yet, so only finished fasts are counted.
 nonisolated struct ArcStatsCalculator {
     let calendar: Calendar
 
-    // A running fast has no final duration yet, so only finished fasts count towards the numbers.
-    func statistics(for fasts: [ArcFast], now: Date) -> ArcFastStatistics {
-        let finished = fasts.filter { !$0.isActive }
-        let durations = finished.map { $0.duration(at: now) }
-        let completedCount = finished.filter { $0.status == .completed }.count
-        let streaks = ArcStreakCalculator(calendar: calendar)
-
-        return ArcFastStatistics(
-            totalFasts: finished.count,
-            averageDuration: durations.isEmpty ? nil : durations.reduce(0, +) / Double(durations.count),
-            longestDuration: durations.max(),
-            currentStreak: streaks.currentStreak(in: fasts, now: now),
-            bestStreak: streaks.bestStreak(in: fasts),
-            completionRate: finished.isEmpty ? nil : Double(completedCount) / Double(finished.count)
+    func periodSummary(for fasts: [ArcFast], days: Int, now: Date) -> ArcPeriodSummary {
+        let durations = finishedFasts(in: fasts, days: days, now: now).map { $0.duration(at: now) }
+        return ArcPeriodSummary(
+            sessionCount: durations.count,
+            averageDuration: durations.isEmpty ? nil : durations.reduce(0, +) / Double(durations.count)
         )
     }
 
-    /// One entry per calendar day, oldest first, ending today. A fast belongs to the day it ended,
-    /// matching how streaks are counted.
-    func dailyDurations(for fasts: [ArcFast], days: Int, now: Date) -> [ArcDailyDuration] {
-        let today = calendar.startOfDay(for: now)
-        let totals = fasts.reduce(into: [Date: TimeInterval]()) { totals, fast in
-            guard let endDate = fast.endDate else { return }
-            totals[calendar.startOfDay(for: endDate), default: 0] += fast.duration(at: now)
+    /// One entry per calendar day, oldest first, ending today.
+    func dailyFasts(for fasts: [ArcFast], days: Int, now: Date) -> [ArcDailyFast] {
+        let longestByDay = finishedFasts(in: fasts, days: days, now: now).reduce(into: [Date: ArcFast]()) { longest, fast in
+            let day = calendar.startOfDay(for: fast.startDate)
+            if let current = longest[day], current.duration(at: now) >= fast.duration(at: now) { return }
+            longest[day] = fast
         }
 
-        return (0..<max(days, 0)).reversed().compactMap { offset in
-            guard let day = calendar.date(byAdding: .day, value: -offset, to: today) else { return nil }
-            return ArcDailyDuration(day: day, duration: totals[day] ?? 0)
+        return windowDays(days: days, now: now).map { day in
+            let fast = longestByDay[day]
+            return ArcDailyFast(day: day, duration: fast?.duration(at: now), targetDuration: fast?.targetDuration)
         }
     }
 
     func weightTrend(for entries: [ArcWeightEntry], days: Int, now: Date) -> ArcWeightTrend {
         let chronological = entries.sorted { $0.date < $1.date }
-        let today = calendar.startOfDay(for: now)
-        let windowStart = calendar.date(byAdding: .day, value: -(max(days, 1) - 1), to: today) ?? today
-        let inWindow = chronological.filter { $0.date >= windowStart && $0.date <= now }
+        let start = windowStart(days: days, now: now)
+        let inWindow = chronological.filter { $0.date >= start && $0.date <= now }
 
         var change: Double?
         if let first = inWindow.first, let last = inWindow.last, inWindow.count > 1 {
             change = last.kilograms - first.kilograms
         }
         return ArcWeightTrend(latest: chronological.last, entries: inWindow, change: change)
+    }
+
+    // MARK: - Window
+
+    private func finishedFasts(in fasts: [ArcFast], days: Int, now: Date) -> [ArcFast] {
+        let start = windowStart(days: days, now: now)
+        return fasts.filter { !$0.isActive && $0.startDate >= start && $0.startDate <= now }
+    }
+
+    private func windowStart(days: Int, now: Date) -> Date {
+        let today = calendar.startOfDay(for: now)
+        return calendar.date(byAdding: .day, value: -(max(days, 1) - 1), to: today) ?? today
+    }
+
+    private func windowDays(days: Int, now: Date) -> [Date] {
+        let today = calendar.startOfDay(for: now)
+        return (0..<max(days, 1)).reversed().compactMap { calendar.date(byAdding: .day, value: -$0, to: today) }
     }
 }

@@ -9,12 +9,14 @@ final class ArcStatCardView: UIView {
         backgroundColor = ArcColor.surface
         layer.cornerRadius = ArcRadius.card
         layer.cornerCurve = .continuous
+        layer.borderWidth = ArcBorder.width
+        layer.borderColor = ArcColor.border.cgColor
 
         titleLabel.font = ArcFont.text(.footnote, weight: .medium)
         titleLabel.textColor = ArcColor.textSecondary
         titleLabel.numberOfLines = 0
 
-        valueLabel.font = ArcFont.digits(size: 26, weight: .bold, relativeTo: .title1)
+        valueLabel.font = ArcFont.digits(size: 28, weight: .bold, relativeTo: .title1)
         valueLabel.textColor = ArcColor.textPrimary
         valueLabel.adjustsFontSizeToFitWidth = true
         valueLabel.minimumScaleFactor = 0.6
