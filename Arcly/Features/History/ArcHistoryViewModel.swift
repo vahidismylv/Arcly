@@ -34,6 +34,7 @@ final class ArcHistoryViewModel {
     @Published private(set) var state: State
 
     var onEditFast: ((ArcFast.ID) -> Void)?
+    var onAddFast: ((Date) -> Void)?
 
     private let store: ArcFastStore
     private let calendar: Calendar
@@ -87,6 +88,10 @@ final class ArcHistoryViewModel {
 
     func editFast(id: ArcFast.ID) {
         onEditFast?(id)
+    }
+
+    func addFast() {
+        onAddFast?(selectedDay)
     }
 
     func deleteFast(id: ArcFast.ID) {

@@ -50,6 +50,15 @@ final class ArcFastStore {
         return fast
     }
 
+    /// Records a fast the user forgot to track. Only finished fasts can be added this way,
+    /// so a manual entry can never become a second active fast.
+    @discardableResult
+    func addFinishedFast(_ fast: ArcFast) -> Bool {
+        guard fast.endDate != nil, !fasts.contains(where: { $0.id == fast.id }) else { return false }
+        fasts = Self.chronological(fasts + [fast])
+        return true
+    }
+
     func updateFast(_ fast: ArcFast) {
         guard let index = fasts.firstIndex(where: { $0.id == fast.id }) else { return }
         var updated = fasts

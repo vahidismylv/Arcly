@@ -57,6 +57,7 @@ final class ArcTodayViewController: UIViewController {
             UIAction { [weak self] _ in self?.viewModel.showSchedule() },
             for: .primaryActionTriggered
         )
+        contentView.detailsView.onEdit = { [weak self] in self?.viewModel.editActiveFastStart() }
         contentView.chooseRhythmRow.addAction(
             UIAction { [weak self] _ in self?.viewModel.showSchedule() },
             for: .touchUpInside

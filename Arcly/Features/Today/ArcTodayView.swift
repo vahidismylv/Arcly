@@ -4,6 +4,7 @@ final class ArcTodayView: UIView {
     let settingsButton = ArcButton(style: .chip)
     let protocolChip = ArcButton(style: .chipAccent)
     let chooseRhythmRow = ArcValueRow(title: String(localized: "Choose your rhythm"), isInteractive: true)
+    let detailsView = ArcSessionDetailsView()
     let actionButton = ArcButton(style: .primary)
 
     private let streakChip = ArcButton(style: .chip)
@@ -12,7 +13,6 @@ final class ArcTodayView: UIView {
     private let statusTitleLabel = UILabel()
     private let statusDetailLabel = UILabel()
     private let horizonView = ArcHorizonView()
-    private let detailsView = ArcSessionDetailsView()
     private lazy var detailsCard = ArcCardView(content: detailsView)
     private lazy var firstLaunchCard = makeFirstLaunchCard()
     private let weekStrip = ArcWeekStripView()

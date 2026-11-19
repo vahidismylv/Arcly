@@ -20,6 +20,7 @@ final class ArcTodayCoordinator {
         let viewModel = ArcTodayViewModel(store: store, reminderScheduler: reminderScheduler)
         viewModel.onShowSchedule = { [weak self] in self?.showSchedule() }
         viewModel.onShowSettings = { [weak self] in self?.showSettings() }
+        viewModel.onEditActiveFast = { [weak self] id in self?.showStartEditor(forFastWithID: id) }
         navigationController.setViewControllers([ArcTodayViewController(viewModel: viewModel)], animated: false)
     }
 
@@ -31,6 +32,20 @@ final class ArcTodayCoordinator {
         let viewController = ArcScheduleViewController(viewModel: viewModel)
         viewController.hidesBottomBarWhenPushed = true
         navigationController.pushViewController(viewController, animated: true)
+    }
+
+    private func showStartEditor(forFastWithID id: ArcFast.ID) {
+        guard let fast = store.fasts.first(where: { $0.id == id }) else { return }
+        let viewModel = ArcFastEditViewModel(fast: fast, store: store)
+        let editor = UINavigationController(rootViewController: ArcFastEditViewController(viewModel: viewModel))
+        viewModel.onFinish = { [weak editor] in
+            editor?.dismiss(animated: true)
+        }
+        if let sheet = editor.sheetPresentationController {
+            sheet.detents = [.medium(), .large()]
+            sheet.prefersGrabberVisible = true
+        }
+        navigationController.present(editor, animated: true)
     }
 
     private func showSettings() {

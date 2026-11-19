@@ -12,6 +12,7 @@ final class ArcTodayViewModel {
     struct Detail: Equatable {
         let title: String
         let value: String
+        var isEditable = false
     }
 
     struct WeekDay: Equatable {
@@ -58,6 +59,7 @@ final class ArcTodayViewModel {
 
     var onShowSchedule: (() -> Void)?
     var onShowSettings: (() -> Void)?
+    var onEditActiveFast: ((ArcFast.ID) -> Void)?
 
     private let store: ArcFastStore
     private let reminderScheduler: ArcReminderScheduler
@@ -118,6 +120,11 @@ final class ArcTodayViewModel {
 
     func showSettings() {
         onShowSettings?()
+    }
+
+    func editActiveFastStart() {
+        guard let fast = store.activeFast else { return }
+        onEditActiveFast?(fast.id)
     }
 
     // MARK: - State
@@ -195,7 +202,11 @@ final class ArcTodayViewModel {
 
         // The goal comes from the fast's own snapshot, so schedule edits never move it.
         state.details = [
-            Detail(title: String(localized: "Started"), value: ArcDateFormatter.relativeDayAndTime(fast.startDate, now: now, calendar: calendar)),
+            Detail(
+                title: String(localized: "Started"),
+                value: ArcDateFormatter.relativeDayAndTime(fast.startDate, now: now, calendar: calendar),
+                isEditable: true
+            ),
             Detail(title: String(localized: "Goal"), value: ArcDateFormatter.relativeDayAndTime(fast.goalDate, now: now, calendar: calendar))
         ]
     }

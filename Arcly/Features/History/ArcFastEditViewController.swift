@@ -28,7 +28,7 @@ final class ArcFastEditViewController: UIViewController {
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        title = String(localized: "Edit Fast")
+        title = viewModel.title
         navigationItem.leftBarButtonItem = UIBarButtonItem(
             systemItem: .cancel,
             primaryAction: UIAction { [weak self] _ in self?.viewModel.cancel() }

@@ -168,6 +168,12 @@
     "A fast can't be longer than 48 hours." : {
 
     },
+    "Add Fast" : {
+
+    },
+    "Add a missed fast" : {
+
+    },
     "Average" : {
 
     },
@@ -185,6 +191,9 @@
 
     },
     "Changes apply from your next fast." : {
+
+    },
+    "Changes when this fast started." : {
 
     },
     "Choose your rhythm" : {
@@ -394,6 +403,9 @@
 
     },
     "Ready when you are" : {
+
+    },
+    "Records a fast for the selected day." : {
 
     },
     "Reminders" : {

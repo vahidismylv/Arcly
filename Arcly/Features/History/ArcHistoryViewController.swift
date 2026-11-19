@@ -21,6 +21,7 @@ final class ArcHistoryViewController: UIViewController {
     private lazy var collectionView = UICollectionView(frame: .zero, collectionViewLayout: makeLayout())
     private lazy var dataSource = makeDataSource()
     private let calendarView = ArcCalendarView()
+    private let addButton = ArcButton(style: .chipAccent)
     private lazy var calendarHeader = makeCalendarHeader()
 
     // A copy of the latest state: @Published delivers new values before the property itself is updated.
@@ -59,6 +60,10 @@ final class ArcHistoryViewController: UIViewController {
 
     private func bindCalendar() {
         calendarView.onSelectDay = { [weak self] day in self?.viewModel.select(day: day) }
+        addButton.addAction(
+            UIAction { [weak self] _ in self?.viewModel.addFast() },
+            for: .primaryActionTriggered
+        )
         calendarView.previousButton.addAction(
             UIAction { [weak self] _ in self?.viewModel.showPreviousMonth() },
             for: .primaryActionTriggered
@@ -143,7 +148,16 @@ final class ArcHistoryViewController: UIViewController {
         titleLabel.numberOfLines = 0
         titleLabel.accessibilityTraits = .header
 
-        let stack = UIStackView(arrangedSubviews: [titleLabel, ArcCardView(content: calendarView, insets: .uniform(ArcSpacing.s + 4))])
+        addButton.symbolName = "plus"
+        addButton.accessibilityLabel = String(localized: "Add a missed fast")
+        addButton.accessibilityHint = String(localized: "Records a fast for the selected day.")
+        addButton.setContentHuggingPriority(.required, for: .horizontal)
+
+        let titleRow = UIStackView(arrangedSubviews: [titleLabel, addButton])
+        titleRow.alignment = .center
+        titleRow.spacing = ArcSpacing.s
+
+        let stack = UIStackView(arrangedSubviews: [titleRow, ArcCardView(content: calendarView, insets: .uniform(ArcSpacing.s + 4))])
         stack.axis = .vertical
         stack.spacing = ArcSpacing.m
         return stack
